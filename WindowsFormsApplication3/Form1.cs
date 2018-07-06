@@ -23,7 +23,7 @@ namespace WindowsFormsApplication3
         int recipnumb;
         int liqpnumb;
         int feunumb;
-        private Metier experience;
+        private Lancement experience;
 
         static class Constants
         {
@@ -46,7 +46,6 @@ namespace WindowsFormsApplication3
             private string connexion_string = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\SampledB.mdf;Integrated Security=True"; // Création d'un string permettant d'ouvrir la dB avec des parametres prédéfinis 
             private string tempName; // Création d'un string permettant de trim le nom avant de le stocker dans le tableau 
             private string tempMatiere; // Création d'un string permettant de trim la matiere avant de la stocker dans le tableaus  
-            private string tempCoefEbu; // Création d'un string permettant de trim le coefficient de chauffe d'un liquide avant de le stocker dans le tableau 
             public DAO()
         {
             try
@@ -62,10 +61,9 @@ namespace WindowsFormsApplication3
                 {
                     tempName = String.Format("{0}", readerL[1]); // tempName recupere le nom dans le resultat de la requete
                     tempName = tempName.Trim(); // trim de tempName permettant de supprimer les espaces inutiles
-                    tempCoefEbu = String.Format("{0}", readerL[4]);
-                    tempCoefEbu = tempCoefEbu.Trim();
+                   
 
-                    temp = String.Format("{1} {2} {3} {4}", readerL[0], tempName, readerL[2], readerL[3], tempCoefEbu); // temp recupere le resultat de la requete
+                    temp = String.Format("{1} {2} {3}", readerL[0], tempName, readerL[2], readerL[3]); // temp recupere le resultat de la requete
                     tabLiquide[index] = temp; // remplissage du tableau final avec temp 
                     index++; // Incrémentation de l'index permettant de naviguer dans le tableau
                 }
@@ -223,7 +221,6 @@ namespace WindowsFormsApplication3
 
             private double temperatureLiquide;
 
-            private double coefficientChauffe;
 
 
 
@@ -235,7 +232,7 @@ namespace WindowsFormsApplication3
 
 
 
-            public Liquide(string l_nomLiquide, int l_degreEbullition, double l_coefficiantEbulition, double l_coefficientChauffe)
+            public Liquide(string l_nomLiquide, int l_degreEbullition, double l_coefficiantEbulition)
 
             {
 
@@ -244,8 +241,7 @@ namespace WindowsFormsApplication3
                 degreEbullition = l_degreEbullition;
 
                 coefficiantEbulition = l_coefficiantEbulition;
-
-                coefficientChauffe = l_coefficientChauffe;
+            
 
                 temperatureLiquide = 0;
 
@@ -295,11 +291,7 @@ namespace WindowsFormsApplication3
 
             }
 
-            public double get_coefficientChauffe()
-            {
-                return coefficientChauffe;
-            }
-
+        
 
             //*** liste des set de liquide ***//
 
@@ -654,6 +646,10 @@ namespace WindowsFormsApplication3
                 recipient.set_volumeActuel(f_volume);
             }
 
+            public int get_vitesseChauffe()
+            {
+                return vitesseChauffe;
+            }
 
 
 
@@ -766,7 +762,7 @@ namespace WindowsFormsApplication3
         };
 
 
-        class Metier
+        class Lancement
         {
             private Feu a_feu;
             private Liquide a_liquide;
@@ -775,26 +771,25 @@ namespace WindowsFormsApplication3
             private string[] tabRecipient;
             private string[] tabFeu;
             private string message;
-            private int statut;
+            private char statut;
+            private int chrono_debut;
+            private int chrono_actuelle;
 
             //*** Pas dattributs ***//
             //*** Constructeur vide ***//
-            //public Metier() { }
+            //public Lancement() { }
             //*** Constructeur surchargé ***//
 
-            public Metier()
+            public Lancement()
             {
                 DAO dao = new DAO();
 
                 tabRecipient = dao.getTabRecipient();
-              
                 tabLiquide = dao.getTabLiquide();
-               
                 tabFeu = dao.getTabFeu();
-             
+
             }
 
-       
             public void Activation(int p_indiceRecipient, int p_indiceLiquide, int p_indiceFeu)  // Ajout du JL du 28/05/2018
             {
                 recupereLiquide(p_indiceLiquide);
@@ -834,14 +829,12 @@ namespace WindowsFormsApplication3
                 string[] tabSLiquide = tabLiquide[choixLiquide].Split(delimiteur);
                 int degre;
                 double coefficientEbulition;
-                double coefficientChauffe;
 
                 nom = tabSLiquide[0];
                 degre = int.Parse(tabSLiquide[1]);
                 coefficientEbulition = double.Parse(tabSLiquide[2]);
-                coefficientChauffe = int.Parse(tabSLiquide[3]);
 
-                Liquide liquide = new Liquide(nom, degre, coefficientEbulition,coefficientChauffe);
+                Liquide liquide = new Liquide(nom, degre, coefficientEbulition);
                 i++;
                 a_liquide = liquide;
             }
@@ -876,6 +869,28 @@ namespace WindowsFormsApplication3
             {
                 return tabFeu;
             }
+            public string get_message()
+            {
+                return message;
+            }
+            public char get_statut()
+            {
+                return statut;
+            }
+
+            public Feu get_feu()
+            {
+                return a_feu;
+            }
+            public Liquide get_liquide()
+            {
+                return a_liquide;
+            }
+            public Recipient get_recipient()
+            {
+                return a_recipient;
+            }
+
 
             private void recupereRecipient(int choixRecipient)
             {
@@ -897,18 +912,20 @@ namespace WindowsFormsApplication3
                 a_recipient = recipient;
             }
 
+            // getTabRecipient -> camelCase
+            // get_tab_recipient
+
             public string[] get_tabRecipient()
             {
                 return tabRecipient;
             }
 
-            public int affectationChoix(int p_choixRecipient, int p_choixLiquide, int p_choixFeu, int p_quantite)
+            public void affectationChoix(int p_choixRecipient, int p_choixLiquide, int p_choixFeu, int p_quantite)
             {
                 recupereRecipient(p_choixRecipient);
                 recupereLiquide(p_choixLiquide);
                 recupereFeu(p_choixFeu);
                 versement(p_quantite);
-                return 60;  // Pour essai
             }
             private void versement(int quantite)
             {
@@ -919,95 +936,78 @@ namespace WindowsFormsApplication3
             public void lancementChauffe()
 
             {
+                message = "Incompatibilité détectée.";
+                statut = Constants.Comparaison;
+
                 int difference;
+
                 int condition = 0;
-                
+
+                //recipient sur feu et allumage du feu
                 a_feu.set_PutOnFire(a_recipient);
+                chrono_debut = Environment.TickCount;
                 a_feu.affiche_feu();
                 //augmentation de la temperature de la plaque jusqua temperature d'ï¿½bulition du liquideContenu
-                while (a_feu.get_degreCourant() < a_recipient.get_temperaturEbulitionLiquide())
+
+
+            }
+            public void statutActuelle()
+            {
+                int timeNow = Environment.TickCount;
+                chrono_actuelle = timeNow - chrono_debut;
+                int temp1 = 0;
+                if (a_feu.get_degreCourant() < a_liquide.get_degreEbullition())
                 {
-                    a_feu.chauffe_feu(a_liquide.get_degreEbullition());
-                    Console.WriteLine("La temperature actuelle de la plaque est de: {0}\n", condition);
-                    System.Threading.Thread.Sleep(1000);
-                    if (condition < a_feu.get_degreCourant())
+                    temp1 = a_feu.get_vitesseChauffe() * (chrono_actuelle / 1000);
+                    a_feu.set_degreCourant(temp1);
+
+                    if (a_feu.get_degreCourant() > a_liquide.get_degreEbullition())
                     {
-                        condition = a_feu.get_degreCourant();
-                        Console.WriteLine("La temperature actuelle de la plaque est de: {0}\n", condition);
+                        a_feu.set_degreCourant(a_liquide.get_degreEbullition());
                     }
-                }
 
-                //diminution de la temperature de la plaque si elle est superieur a celle demander
-                if (a_feu.get_degreCourant() > a_recipient.get_temperaturEbulitionLiquide())
-                {
-                    difference = a_feu.get_degreCourant() - a_recipient.get_temperaturEbulitionLiquide();
-                    Console.WriteLine("La temperature va baisser de: {0} \n", difference);
-                    a_feu.set_degreCourant(difference);
+                    message = "la température de la plaque monte à température d'ébullition, sa température est de " + a_feu.get_degreCourant() + " °C";
+                    statut = '3';
 
                 }
-
-                a_feu.affiche_feu();
-                //mise en ebulition du liquide mais  non fonctionnel
-                // time_t compteur;
-                // srand(time(null));
-                // compteur = time(&compteur);
-
-                double temperature = a_recipient.get_temperatureLiquideContenu();
-                //augmente la temperature du liquide jusqua ebulition
-                while (a_recipient.get_temperatureLiquideContenu() < a_recipient.get_temperaturEbulitionLiquide())
+                else if (a_liquide.get_temperatureLiquide() < a_liquide.get_degreEbullition())
                 {
-                    a_feu.maintenirFeu(temperature);
-                    temperature = a_recipient.get_temperatureLiquideContenu();
-                    Console.WriteLine("La temperature du liquide est de {0} degrés \n", a_recipient.get_temperatureLiquideContenu());
+                    a_feu.maintenirFeu(a_liquide.get_temperatureLiquide());
+                    message = "Le liquide est en cours de chauffe, sa température est de " + a_liquide.get_temperatureLiquide() + " °C";
+                    statut = '4';
                 }
-
-
-                //evaporation du liquide
-                double diminution = a_recipient.get_volumeActuel();
-                while (a_recipient.get_volumeActuel() > 0)
+                else
                 {
-                    //le liquide perdra (coefficient / (coefficient -1) cl par seconde
+                    double diminution = a_recipient.get_volumeActuel();
                     diminution = a_recipient.get_volumeActuel() - (a_recipient.get_coefficientLiquideContenut() / (a_recipient.get_coefficientLiquideContenut() - 1));
                     a_recipient.set_volumeActuel(diminution);
                     //pour eviter que la temperature depace celle dï¿½bulition
-                    if (a_recipient.get_volumeActuel() < 0)
-                    {
-                        a_recipient.set_volumeActuel(0);
-                    }
-
-                    //compteur = time(&compteur);
-                    System.Threading.Thread.Sleep(1000);
-                    message = "Le recipient contient actuellement" + a_recipient.get_volumeActuel() + "\n";
-                    
+                    message = "Le liquide est en cours d'évaporation, son volume est de " + a_recipient.get_volumeActuel() + " Cl";
+                    statut = '5';
                 }
-                Console.ReadLine();
-
+                if (a_recipient.get_volumeActuel() == 0)
+                {
+                    message = "il ne reste plus de liquide";
+                    statut = '6';
+                }
             }
-            public string get_message()
-            {
-                return message;
-            }
-
-            public int get_statut()
-            {
-                return statut;
-            }
-        };
-       
+        }
         public Form1()
         {
-           InitializeComponent();
-           experience = new Metier();
-           liquides = experience.get_tabLiquide();
-           recipients = experience.get_tabRecipient();
-           feux = experience.get_tabFeu();
+            InitializeComponent();
+            experience = new Lancement(); //instanciation de "Metier"
+            liquides = experience.get_tabLiquide(); // récuperation des liquides par la l'instanciation de metier
+            recipients = experience.get_tabRecipient(); // récuperation des recipients par la l'instanciation de metier
+            feux = experience.get_tabFeu(); // récuperation des feux par la l'instanciation de metier
 
-                for (int i = 0; i < 4; i++)
-                {
-                    listBox1.Items.Add(liquides[i]);
-                    listBox2.Items.Add(recipients[i]);
-                    listBox3.Items.Add(feux[i]);             
-                }
+            // for (int i = 0; i < liquides.Count(); i++)
+            for (int i = 0; i < 3; i++)
+            {
+                listBox1.Items.Add(liquides[i]); // ajout des liquides dans la listsbox1
+                                                 // MessageBox.Show(liquides[i]);  
+                listBox2.Items.Add(recipients[i]); //ajout des recipients dans la listbox2
+                listBox3.Items.Add(feux[i]);    // ajout des feux dans la listbox3
+            }
 
         }
 
@@ -1018,7 +1018,7 @@ namespace WindowsFormsApplication3
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            liqpnumb = listBox1.SelectedIndex;
+            liqpnumb = listBox1.SelectedIndex; // liqpnumb récupere l'index selectionner
             // MessageBox.Show(liqpnumb.ToString());
 
 
@@ -1026,76 +1026,77 @@ namespace WindowsFormsApplication3
 
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            recipnumb = listBox2.SelectedIndex;
-             // MessageBox.Show(recipnumb.ToString());
+            recipnumb = listBox2.SelectedIndex;  // récupere l'index selectionner
+                                                 // MessageBox.Show(recipnumb.ToString());
         }
 
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            feunumb = listBox3.SelectedIndex;
-           // MessageBox.Show(feunumb.ToString());
+            feunumb = listBox3.SelectedIndex; // récupere l'index selectionner
+                                              // MessageBox.Show(feunumb.ToString());
         }
 
         private void label1_Click(object sender, EventArgs e)
         {
-            
+
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e) // bouton RUN 
         {
-            int tmpsCourant,tmpsMax;
-            tmpsMax= experience.affectationChoix(recipnumb, liqpnumb, feunumb, int.Parse(textBox1.Text));
-            tmpsCourant = 0;
-            while(tmpsCourant < tmpsMax)
-                {
-                switch (experience.get_statut())
-                    {
-                    case Constants.ExpActif :
-                        textBox1.Text = experience.get_message();
-                        break;
-                    case Constants.feuAllumer :
-                        textBox1.Text = experience.get_message();
-                        break;
-                    case Constants.chaufRecip:
-                        textBox1.Text = experience.get_message();
-                        break;
-                    case Constants.ebulliton:
-                        textBox1.Text = experience.get_message();
-                        break;
-                    case Constants.evapliq:
-                        textBox1.Text = experience.get_message();
-                        break;
-                    case Constants.Comparaison:
-                        textBox1.Text = experience.get_message();
-                        break;
-                    default:
-                    break;
-                   }
-                experience.get_message();
-                System.Threading.Thread.Sleep(5000);
-                tmpsCourant = tmpsCourant + 50;
+            // int tmpsCourant,tmpsMax; // déclaration du temps courant et du temps max
+            experience.affectationChoix(recipnumb, liqpnumb, feunumb, 50); // temps max calcul le temps que affectation choix possede (affection choix recupere tous les index selct)
+            experience.lancementChauffe();
+            char Locmess;
+            //  tmpsCourant = 0;
+            while (experience.get_statut() != 6) // boucle tant que temps courant inférieur au temps max
+            {
+                /*   switch (experience.get_statut()) // si experiance.get_statut possede une information
+                       {
+                       case Constants.ExpActif : // dans le cas ou exp.get_statut est à ExpActif il envoie un message pour dire le staut de l'exp
+                           textBox1.Text = experience.get_message();
+                           break; // arrete la boucle 
+                       case Constants.feuAllumer: // dans le cas ou exp.get_statut est à feuAllumer il envoie un message pour dire le staut de l'exp
+                           textBox1.Text = experience.get_message();
+                           break; // arrete la boucle 
+                       case Constants.chaufRecip: //dans le cas ou exp.get_statut est à cahufRecip il envoie un message pour dire le staut de l'exp
+                           textBox1.Text = experience.get_message();
+                           break; // arrete la boucle 
+                       case Constants.ebulliton: // dans le cas ou exp.get_statut est à ebulliton il envoie un message pour dire le staut de l'exp
+                           textBox1.Text = experience.get_message();
+                           break; // arrete la boucle 
+                       case Constants.evapliq: // dans le cas ou exp.get_statut est à evapliq il envoie un message pour dire le staut de l'exp
+                           textBox1.Text = experience.get_message();
+                           break; // arrete la boucle 
+                       case Constants.Comparaison: // dans le cas ou exp.get_statut est à Comparaison il envoie un message pour dire le staut de l'exp 
+                           textBox1.Text = experience.get_message();
+                           break; // arrete la boucle 
+                       default: // par default 
+                       break; // arrete la boucle 
+                       }*/
+
+                /* textBox1.Text = experience.get_message();
+                 MessageBox.Show(textBox1.Text);
+                 System.Threading.Thread.Sleep(5000);
+                 // tmpsCourant = tmpsCourant + 50; */
+
+                Locmess = experience.get_statut();
+                textBox1.Text = Locmess.ToString();
+                System.Threading.Thread.Sleep(1000);
+               // MessageBox.Show(Locmess);
+
             }
-            
+
+
+
+
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
 
         }
-        
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)  // ajout Loan qui remplassera les Listbox
-        {
 
-            liqpnumb = listBox1.SelectedIndex; //Je n'arrive pas encore à ajouter les liquides et les mettres dans le menus déroulant (ce que j'aimerai voir avec vous)
-        }
-
-        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e) //remplasserment des ListBox à voir ensemble j'arrive pas à mettre les "nom" dans la liste déroulante
-        {
-            //comboBox1.Items.Add();
-            recipnumb = listBox2.SelectedIndex;
-        }
-
-        private void label4_Click(object sender, EventArgs e)
+        private void textBox2_TextChanged(object sender, EventArgs e)
         {
 
         }
