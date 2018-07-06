@@ -7,8 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Data.SqlClient;
 using System.IO;
+
 
 namespace WindowsFormsApplication3
 {
@@ -22,7 +23,7 @@ namespace WindowsFormsApplication3
         int recipnumb;
         int liqpnumb;
         int feunumb;
-        private Lancement experience;
+        private Metier experience;
 
         static class Constants
         {
@@ -37,35 +38,172 @@ namespace WindowsFormsApplication3
 
         class DAO
         {
-            string[] line = new string[80];
-            string temp;
-            int index = 0;
-            int nbrLignes = 0;
-
-            public DAO(string p_path)
+            private string[] tabLiquide = new string[80]; // Création d'un tableau de string qui receptionnera les liquides
+            private string[] tabRecipient = new string[80]; // Création d'un tableau de string qui receptionnera les recipients
+            private string[] tabFeu = new string[80]; // Création d'un tableau de string qui receptionnera les feux
+            private string temp; // Création d'un string temporaire pour effectuer le transfert entre la DB et les tableaux 
+            private int index = 0; // Création d'un index permettant de naviguer dans les tableaux afin de les remplir 
+            private string connexion_string = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\SampledB.mdf;Integrated Security=True"; // Création d'un string permettant d'ouvrir la dB avec des parametres prédéfinis 
+            private string tempName; // Création d'un string permettant de trim le nom avant de le stocker dans le tableau 
+            private string tempMatiere; // Création d'un string permettant de trim la matiere avant de la stocker dans le tableaus  
+            private string tempCoefEbu; // Création d'un string permettant de trim le coefficient de chauffe d'un liquide avant de le stocker dans le tableau 
+            public DAO()
+        {
+            try
             {
-                StreamReader dao = new StreamReader(p_path);
+                SqlConnection MyConnection = new SqlConnection(connexion_string); // Ouverture d'une connexion à la dB avec la connexion_string en parametres
+                MyConnection.Open(); // Activation de la connexion
 
-                if (dao != null)
+                SqlCommand cmdLiquide = new SqlCommand("Select * from Liquide"); // Création de la requete SQL permettant de récuperer tous les liquides stockés dans la dB
+                cmdLiquide.Connection = MyConnection; // Metier de la requete
+                SqlDataReader readerL = cmdLiquide.ExecuteReader();  // Récupération des résultats de la requete dans un Reader 
+
+                while (readerL.Read()) // Tant que le reader voit quelque chose 
                 {
-                    temp = dao.ReadLine();
+                    tempName = String.Format("{0}", readerL[1]); // tempName recupere le nom dans le resultat de la requete
+                    tempName = tempName.Trim(); // trim de tempName permettant de supprimer les espaces inutiles
+                    tempCoefEbu = String.Format("{0}", readerL[4]);
+                    tempCoefEbu = tempCoefEbu.Trim();
 
-                    while (temp != null)
-                    {
-                        line[index] = temp;
-                        temp = dao.ReadLine();
-                        nbrLignes++;
-                        index++;
-                    }
+                    temp = String.Format("{1} {2} {3} {4}", readerL[0], tempName, readerL[2], readerL[3], tempCoefEbu); // temp recupere le resultat de la requete
+                    tabLiquide[index] = temp; // remplissage du tableau final avec temp 
+                    index++; // Incrémentation de l'index permettant de naviguer dans le tableau
                 }
-                else
-                    Console.WriteLine("ERROR 100 : Impossible d'ouvrir le fichier"); // changer le Console.WriteLine en Messagebox (Loan) 
-                dao.Close();
+                index = 0; // Remise a 0 de l'index afin de pouvoir le réutiliser 
+                readerL.Close(); // Fermeture du Reader et donc de la requete 
+
+
+                SqlCommand cmdRecipient = new SqlCommand("Select * from Recipient"); // Création de la requete SQL permettant de récuperer tous les recipients stockés dans la dB
+                cmdRecipient.Connection = MyConnection; // Metier de la requete
+                SqlDataReader readerR = cmdRecipient.ExecuteReader();  // Récupération des résultats de la requete dans un Reader 
+
+                while (readerR.Read()) // Tant que le reader voit quelque chose 
+                {
+                    tempName = String.Format("{0}", readerR[1]); // tempName recupere le nom dans le resultat de la requete
+                    tempName = tempName.Trim(); // trim de tempName permettant de supprimer les espaces inutiles
+
+                    temp = String.Format("{1} {2} {3}", readerR[0], tempName, readerR[2], readerR[3]); // temp recupere le resultat de la requete
+                    tabRecipient[index] = temp; // remplissage du tableau final avec temp 
+                    index++; // Incrémentation de l'index permettant de naviguer dans le tableau
+                }
+                index = 0; // Remise a 0 de l'index afin de pouvoir le réutiliser 
+                readerR.Close(); // Fermeture du Reader et donc de la requete 
+
+
+                SqlCommand cmdFeu = new SqlCommand("Select * from Feu"); // Création de la requete SQL permettant de récuperer tous les feux stockés dans la dB
+                cmdFeu.Connection = MyConnection; // Metier de la requete
+                SqlDataReader readerF = cmdFeu.ExecuteReader();  // Récupération des résultats de la requete dans un Reader 
+
+                while (readerF.Read()) // Tant que le reader voit quelque chose 
+                {
+                    tempName = String.Format("{0}", readerF[1]); // tempName recupere le nom dans le resultat de la requete
+                    tempName = tempName.Trim(); // trim de tempName permettant de supprimer les espaces inutiles
+                    tempMatiere = String.Format("{0}", readerF[2]); // tempMatiere recupere le nom dans le resultat de la requete
+                    tempMatiere = tempMatiere.Trim(); // trim de tempMatiere permettant de supprimer les espaces inutiles
+
+                    temp = String.Format("{1} {2} {3} {4}", readerF[0], tempName, tempMatiere, readerF[3], readerF[4]); // temp recupere le resultat de la requete
+                    tabFeu[index] = temp; // remplissage du tableau final avec temp 
+                    index++; // Incrémentation de l'index permettant de naviguer dans le tableau
+                }
+                index = 0; // Remise a 0 de l'index afin de pouvoir le réutiliser 
+                readerF.Close(); // Fermeture du Reader et donc de la requete 
+            }
+            catch (Exception e) // Si l'ouverture de la dB est impossible 
+            {
+                Console.WriteLine(e.Message); // Afficher le message d'erreur renvoyé 
+                RecupViaTxt(); // Lancer la récupération via les fichiers locaux 
+            }
+        }
+            public void RecupViaTxt()
+            {
+                string[] p_path = new string[3]; // Création d'un tableau qui contiendra les chemins d'accès aux fichiers
+                p_path[0] = "Liquides.txt"; // Configuration du tableau 
+                p_path[1] = "Recipients.txt"; // Configuration du tableau 
+                p_path[2] = "Feux.txt"; // Configuration du tableau 
+
+                Console.WriteLine("\n TENTATIVE DE RECUPERATION VIA LES FICHIERS LOCAUX\n");
+
+                try
+                {
+                    StreamReader dao = new StreamReader(p_path[0]); // Ouverture du fichier via un StreamReader que l'on nomme dao
+
+                    if (dao != null) // Si le fichier contient quelque chose
+                    {
+                        temp = dao.ReadLine(); // temp prend la valeur de la première ligne
+
+                        while (temp != null) // Tant que temp contient quelque chose
+                        {
+                            tabLiquide[index] = temp; // Remplissage du tableau de liquide avec le contenu de Temp 
+                            temp = dao.ReadLine(); // temp prend la valeur de la ligne suivante 
+                            index++; // Incrémentation de l'index afin de pointer sur la case suivante du tableau 
+                        }
+                    }
+                    dao.Close(); // Fermeture du fichier
+                }
+                catch (Exception e) // Si le fichier ne s'ouvre pas / mal 
+                {
+                    Console.WriteLine(e.Message); // Affichage du message d'erreur 
+                }
+
+
+                try
+                {
+                    StreamReader dao = new StreamReader(p_path[1]); // Ouverture du fichier via un StreamReader que l'on nomme dao
+
+                    if (dao != null) // Si le fichier contient quelque chose
+                    {
+                        temp = dao.ReadLine(); // temp prend la valeur de la premiere ligne 
+
+                        while (temp != null) // Tant que temp contient quelque chose 
+                        {
+                            tabRecipient[index] = temp; // Remplissage du contenu de Recipient avec le contenu de Temp 
+                            temp = dao.ReadLine(); // temp prend la valeur de la ligne suivante 
+                            index++; // Incrémentation de l'index afin de pointer sur la case suivante du tableau 
+                        }
+                    }
+                    dao.Close(); // Fermeture du fichier 
+                }
+                catch (Exception e) // Si le fichier ne s'ouvre pas / mal 
+                {
+                    Console.WriteLine(e.Message); // Affichage du message d'erreur 
+                }
+
+                try
+                {
+                    StreamReader dao = new StreamReader(p_path[2]); // Ouverture du fichier via un StreamReader que l'on nomme dao
+
+                    if (dao != null) // Si le fichier contient quelque chose
+                    {
+                        temp = dao.ReadLine(); // temp prend la valeur de la premiere ligne 
+
+                        while (temp != null) // Tant que temp contient quelque chose 
+                        {
+                            tabFeu[index] = temp; // Remplissage du contenu de Recipient avec le contenu de Temp 
+                            temp = dao.ReadLine(); // temp prend la valeur de la ligne suivante 
+                            index++; // Incrémentation de l'index afin de pointer sur la case suivante du tableau 
+                        }
+                    }
+                    dao.Close(); // Fermeture du fichier 
+                }
+                catch (Exception e) // Si le fichier ne s'ouvre pas / mal 
+                {
+                    Console.WriteLine(e.Message); // Affichage du message d'erreur 
+                }
             }
 
-            public string[] getTab()
+            public string[] getTabLiquide() // Permet de récuperer le tableau de Liquides
             {
-                return line;
+                return tabLiquide;
+            }
+
+            public string[] getTabRecipient() // Permet de récuperer le tableau de Recipients 
+            {
+                return tabRecipient;
+            }
+
+            public string[] getTabFeu() // Permet de récuperer le tableau de Feux 
+            {
+                return tabFeu;
             }
         }
 
@@ -85,6 +223,8 @@ namespace WindowsFormsApplication3
 
             private double temperatureLiquide;
 
+            private double coefficientChauffe;
+
 
 
 
@@ -95,7 +235,7 @@ namespace WindowsFormsApplication3
 
 
 
-            public Liquide(string l_nomLiquide, int l_degreEbullition, double l_coefficiantEbulition)
+            public Liquide(string l_nomLiquide, int l_degreEbullition, double l_coefficiantEbulition, double l_coefficientChauffe)
 
             {
 
@@ -104,6 +244,8 @@ namespace WindowsFormsApplication3
                 degreEbullition = l_degreEbullition;
 
                 coefficiantEbulition = l_coefficiantEbulition;
+
+                coefficientChauffe = l_coefficientChauffe;
 
                 temperatureLiquide = 0;
 
@@ -153,6 +295,10 @@ namespace WindowsFormsApplication3
 
             }
 
+            public double get_coefficientChauffe()
+            {
+                return coefficientChauffe;
+            }
 
 
             //*** liste des set de liquide ***//
@@ -620,7 +766,7 @@ namespace WindowsFormsApplication3
         };
 
 
-        class Lancement
+        class Metier
         {
             private Feu a_feu;
             private Liquide a_liquide;
@@ -633,43 +779,22 @@ namespace WindowsFormsApplication3
 
             //*** Pas dattributs ***//
             //*** Constructeur vide ***//
-            //public Lancement() { }
+            //public Metier() { }
             //*** Constructeur surchargé ***//
 
-            public Lancement()
+            public Metier()
             {
-                string path = "C:\\temp\\f1.txt";   // A reprendre !!!
-                DAO daoLiquide = new DAO(path);
-                tabLiquide = daoLiquide.getTab();
+                DAO dao = new DAO();
 
-                path = "C:\\temp\\recipient.txt";
-                DAO daoRecipient = new DAO(path);
-                tabRecipient = daoRecipient.getTab();
-
-                path = "C:\\temp\\feu.txt";
-                DAO daoFeu = new DAO(path);
-                tabFeu = daoFeu.getTab();
+                tabRecipient = dao.getTabRecipient();
+              
+                tabLiquide = dao.getTabLiquide();
+               
+                tabFeu = dao.getTabFeu();
+             
             }
 
-            public Lancement(string[] listeRecipient, string[] listeLiquide, string[] listeFeu)
-
-            {
-                string path = "C:\\temp\\f1.txt";
-                DAO daoLiquide = new DAO(path);
-                tabLiquide = daoLiquide.getTab();
-                listeLiquide = daoLiquide.getTab();
-
-                path = "C:\\temp\\recipient.txt";
-                DAO daoRecipient = new DAO(path);
-                tabRecipient = daoRecipient.getTab();
-                listeRecipient = daoRecipient.getTab();
-
-                path = "C:\\temp\\feu.txt";
-                DAO daoFeu = new DAO(path);
-                tabFeu = daoFeu.getTab();
-                listeFeu = daoFeu.getTab();
-            }
-
+       
             public void Activation(int p_indiceRecipient, int p_indiceLiquide, int p_indiceFeu)  // Ajout du JL du 28/05/2018
             {
                 recupereLiquide(p_indiceLiquide);
@@ -709,12 +834,14 @@ namespace WindowsFormsApplication3
                 string[] tabSLiquide = tabLiquide[choixLiquide].Split(delimiteur);
                 int degre;
                 double coefficientEbulition;
+                double coefficientChauffe;
 
                 nom = tabSLiquide[0];
                 degre = int.Parse(tabSLiquide[1]);
                 coefficientEbulition = double.Parse(tabSLiquide[2]);
+                coefficientChauffe = int.Parse(tabSLiquide[3]);
 
-                Liquide liquide = new Liquide(nom, degre, coefficientEbulition);
+                Liquide liquide = new Liquide(nom, degre, coefficientEbulition,coefficientChauffe);
                 i++;
                 a_liquide = liquide;
             }
@@ -770,9 +897,6 @@ namespace WindowsFormsApplication3
                 a_recipient = recipient;
             }
 
-            // getTabRecipient -> camelCase
-            // get_tab_recipient
-
             public string[] get_tabRecipient()
             {
                 return tabRecipient;
@@ -795,13 +919,9 @@ namespace WindowsFormsApplication3
             public void lancementChauffe()
 
             {
-
                 int difference;
-
                 int condition = 0;
-
-                //recipient sur feu et allumage du feu
-
+                
                 a_feu.set_PutOnFire(a_recipient);
                 a_feu.affiche_feu();
                 //augmentation de la temperature de la plaque jusqua temperature d'ï¿½bulition du liquideContenu
@@ -877,16 +997,14 @@ namespace WindowsFormsApplication3
         public Form1()
         {
            InitializeComponent();
-           experience = new Lancement();
+           experience = new Metier();
            liquides = experience.get_tabLiquide();
            recipients = experience.get_tabRecipient();
            feux = experience.get_tabFeu();
 
-            // for (int i = 0; i < liquides.Count(); i++)
-               for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 4; i++)
                 {
-                    listBox1.Items.Add(liquides[i] );
-                    // MessageBox.Show(liquides[i]);  
+                    listBox1.Items.Add(liquides[i]);
                     listBox2.Items.Add(recipients[i]);
                     listBox3.Items.Add(feux[i]);             
                 }
@@ -926,7 +1044,7 @@ namespace WindowsFormsApplication3
         private void button1_Click(object sender, EventArgs e)
         {
             int tmpsCourant,tmpsMax;
-            tmpsMax= experience.affectationChoix(recipnumb, liqpnumb, feunumb, 50);
+            tmpsMax= experience.affectationChoix(recipnumb, liqpnumb, feunumb, int.Parse(textBox1.Text));
             tmpsCourant = 0;
             while(tmpsCourant < tmpsMax)
                 {
@@ -964,7 +1082,7 @@ namespace WindowsFormsApplication3
         {
 
         }
-
+        
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)  // ajout Loan qui remplassera les Listbox
         {
 
@@ -975,6 +1093,16 @@ namespace WindowsFormsApplication3
         {
             //comboBox1.Items.Add();
             recipnumb = listBox2.SelectedIndex;
+        }
+
+        private void label4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
