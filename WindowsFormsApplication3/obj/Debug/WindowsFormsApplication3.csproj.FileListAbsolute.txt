@@ -16,3 +16,6 @@ C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication3\WindowsFormsApp
 C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication3\WindowsFormsApplication3\obj\Debug\WindowsFormsApplication3.Form1.resources
 C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication3\WindowsFormsApplication3\obj\Debug\WindowsFormsApplication3.Properties.Resources.resources
 C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication3\WindowsFormsApplication3\obj\Debug\WindowsFormsApplication3.csproj.GenerateResource.Cache
+C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication4\WindowsFormsApplication3\bin\Debug\WindowsFormsApplication3.exe.config
+C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication4\WindowsFormsApplication3\obj\Debug\WindowsFormsApplication3.exe
+C:\Bureau\formation\Desktop\Loan Cleris\WindowsFormsApplication4\WindowsFormsApplication3\obj\Debug\WindowsFormsApplication3.pdb
